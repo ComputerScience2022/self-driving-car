@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from Line import Line
+import mid_detection as md
 
 
 def region_of_interest(img, vertices):
@@ -46,7 +47,7 @@ def weighted_img(img, initial_img, α=0.8, β=1., λ=0.):
     initial_img * α + img * β + λ
     """
     img = np.uint8(img)
-    if len(img.shape) is 2:
+    if len(img.shape) == 2:
         img = np.dstack((img, np.zeros_like(img), np.zeros_like(img)))
 
     return cv2.addWeighted(initial_img, α, img, β, λ)
@@ -155,7 +156,7 @@ def color_frame_pipeline(frames, solid_lines=True, temporal_smoothing=True):
     img_h, img_w = frames[0].shape[0], frames[0].shape[1]
 
     lane_lines = []
-    for t in range(0, len(frames)):
+    for t in range(len(frames)):
         inferred_lanes = get_lane_lines(color_image=frames[t], solid_lines=solid_lines)
         lane_lines.append(inferred_lanes)
 
@@ -167,10 +168,11 @@ def color_frame_pipeline(frames, solid_lines=True, temporal_smoothing=True):
     # prepare empty mask on which lines are drawn
     line_img = np.zeros(shape=(img_h, img_w))
 
+    mid_lane = md.get_mid_line(lane_lines[0], lane_lines[1])
     # draw lanes found
     for lane in lane_lines:
         lane.draw(line_img)
-
+    mid_lane.draw(line_img)
     # keep only region of interest by masking
     vertices = np.array([[(50, img_h),
                           (450, 310),
